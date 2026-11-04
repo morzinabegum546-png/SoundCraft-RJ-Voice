@@ -1,34 +1,33 @@
 
-name: Check SoundCraft RJ Voice
+name: Inspect RJ Voice Build Script
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'soundcraft-main-rjvoice.zip'
-      - '.github/workflows/build.yml'
 
 jobs:
   inspect:
     runs-on: windows-latest
 
     steps:
-      - name: Download repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project ZIP
+      - name: Extract ZIP
         shell: pwsh
         run: |
-          Expand-Archive -Path "soundcraft-main-rjvoice.zip" -DestinationPath "project" -Force
-          Write-Host "Project files extracted successfully"
+          Expand-Archive "soundcraft-main-rjvoice.zip" "project" -Force
 
-      - name: Inspect project
+      - name: Read Windows package script
         shell: pwsh
         run: |
-          Get-ChildItem "project" -Recurse -File |
-            Where-Object {
-              $_.Name -in @("Cargo.toml", "package.json", "package.ps1", "README.md")
-            } |
-            ForEach-Object {
-              Write-Host $_.FullName
-            }
+          Get-Content "project/soundcraft-main/packaging/windows/package.ps1"
+
+      - name: Read build instructions
+        shell: pwsh
+        run: |
+          Get-Content "project/soundcraft-main/README.md" -TotalCount 150
+
+      - name: Show Rust version requirements
+        shell: pwsh
+        run: |
+          Get-Content "project/soundcraft-main/Cargo.toml" -TotalCount 120
