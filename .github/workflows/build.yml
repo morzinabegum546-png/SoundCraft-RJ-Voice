@@ -1,34 +1,47 @@
 
-name: Inspect RJ Voice Build Instructions
+name: Build SoundCraft RJ Voice for Windows
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/build.yml'
 
 jobs:
-  inspect:
+  build:
     runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 90
 
-      - name: Extract project
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Extract SoundCraft project
         shell: pwsh
         run: |
           Expand-Archive "soundcraft-main-rjvoice.zip" "project" -Force
 
-      - name: Show Windows packaging script
+      - name: Install WiX 5
         shell: pwsh
         run: |
-          Get-Content "project/soundcraft-main/packaging/windows/package.ps1"
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append
 
-      - name: Show README instructions
+      - name: Build Windows application
         shell: pwsh
+        working-directory: project/soundcraft-main
         run: |
-          Get-Content "project/soundcraft-main/README.md" -TotalCount 150
+          $env:SOUNDCRAFT_BUILD_SHA = "${{ github.sha }}"
+          $env:SOUNDCRAFT_BUILD_DATE = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
+          .\packaging\windows\package.ps1 -Arch x64
 
-      - name: Show Rust configuration
-        shell: pwsh
-        run: |
-          Get-Content "project/soundcraft-main/Cargo.toml" -TotalCount 150
+      - name: Upload Windows installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: SoundCraft-RJ-Voice-Windows-x64
+          path: |
+            project/soundcraft-main/dist/release/*.msi
+            project/soundcraft-main/dist/release/*portable.zip
+          if-no-files-found: error
