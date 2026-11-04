@@ -1,0 +1,34 @@
+
+name: Check SoundCraft RJ Voice
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'soundcraft-main-rjvoice.zip'
+      - '.github/workflows/build.yml'
+
+jobs:
+  inspect:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        shell: pwsh
+        run: |
+          Expand-Archive -Path "soundcraft-main-rjvoice.zip" -DestinationPath "project" -Force
+          Write-Host "Project files extracted successfully"
+
+      - name: Inspect project
+        shell: pwsh
+        run: |
+          Get-ChildItem "project" -Recurse -File |
+            Where-Object {
+              $_.Name -in @("Cargo.toml", "package.json", "package.ps1", "README.md")
+            } |
+            ForEach-Object {
+              Write-Host $_.FullName
+            }
